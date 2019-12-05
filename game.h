@@ -6,7 +6,7 @@
 void nextGeneration(int *grid);
 
 void renderGrid(int *grid, SDL_Renderer *renderer, SDL_Texture *aliveTexture,
-            SDL_Texture *deadTexture);
+                SDL_Texture *deadTexture);
 
 void clearGrid(int *grid);
 

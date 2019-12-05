@@ -1,10 +1,18 @@
 #include "constants.h"
 #include "game.h"
-#include "types.h"
-#include <SDL.h>
-#include <SDL_image.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdbool.h>
 #include <stdio.h>
+
+typedef struct {
+  bool quit;
+  bool paused;
+  bool mouseDown;
+  int buttonMakeAlive;
+  int grid[ROWS * COLUMNS];
+  Uint32 tickDelay;
+} state_t;
 
 SDL_Texture *cellTexture = NULL;
 SDL_Texture *cellMutedTexture = NULL;
@@ -77,16 +85,16 @@ bool loadMedia(SDL_Renderer *renderer) {
   return true;
 }
 
-void cleanup(SDL_Window *window, SDL_Renderer *renderer) {
+void cleanup(SDL_Window **window, SDL_Renderer **renderer) {
   SDL_DestroyTexture(cellTexture);
   SDL_DestroyTexture(cellMutedTexture);
   cellTexture = NULL;
   cellMutedTexture = NULL;
 
-  SDL_DestroyRenderer(renderer);
+  SDL_DestroyRenderer(*renderer);
   renderer = NULL;
 
-  SDL_DestroyWindow(window);
+  SDL_DestroyWindow(*window);
   window = NULL;
 
   IMG_Quit();
@@ -122,9 +130,12 @@ void handleEvent(SDL_Event *event, state_t *state) {
     case SDL_KEYDOWN:
       if (currentKeyStates[SDL_SCANCODE_SPACE]) {
         state->paused = !state->paused;
-      }
-      else if (currentKeyStates[SDL_SCANCODE_ESCAPE]) {
+      } else if (currentKeyStates[SDL_SCANCODE_ESCAPE]) {
         clearGrid(state->grid);
+      } else if (currentKeyStates[SDL_SCANCODE_LEFT]) {
+        state->tickDelay += state->tickDelay >= 120 ? 0 : 10;
+      } else if (currentKeyStates[SDL_SCANCODE_RIGHT]) {
+        state->tickDelay -= state->tickDelay < 20 ? 0 : 10;
       }
       break;
     }
@@ -148,18 +159,19 @@ int main() {
       .paused = true,
       .mouseDown = false,
       .buttonMakeAlive = 0,
+      .tickDelay = 80,
   };
 
   clearGrid(state.grid);
 
   SDL_Event event;
-  Uint32 ticks;
+  Uint32 ticks = SDL_GetTicks();
   Uint32 now;
   while (!state.quit) {
     handleEvent(&event, &state);
     now = SDL_GetTicks();
 
-    if (now - ticks < TICK_SPEED) {
+    if (now - ticks < state.tickDelay) {
       continue;
     }
 
@@ -174,7 +186,7 @@ int main() {
     SDL_RenderPresent(renderer);
   }
 
-  cleanup(window, renderer);
+  cleanup(&window, &renderer);
 
   return 0;
 }

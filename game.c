@@ -23,6 +23,10 @@ int countNeighbours(const int *grid, int x, int y) {
 
   for (int r = y - 1; r <= y + 1; r++) {
     for (int c = x - 1; c <= x + 1; c++) {
+      if (r == -1 || r == ROWS || c == -1 || c == COLUMNS) {
+        continue;
+      }
+
       if (r != y || c != x) {
         neighbours += grid[r * COLUMNS + c];
       }
@@ -37,8 +41,8 @@ void nextGeneration(int *grid) {
   int neighbours;
   int self;
 
-  for (int r = 1; r < ROWS - 1; r++) {
-    for (int c = 1; c < COLUMNS - 1; c++) {
+  for (int r = 0; r < ROWS; r++) {
+    for (int c = 0; c < COLUMNS; c++) {
       neighbours = countNeighbours(grid, c, r);
       self = grid[r * COLUMNS + c];
 

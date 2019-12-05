@@ -2,23 +2,17 @@ cmake_minimum_required(VERSION 3.10)
 
 project(GameOfLife)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+find_package(PkgConfig)
 
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
+pkg_check_modules(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
+
+pkg_check_modules(SDL2_IMAGE REQUIRED SDL2_image)
 include_directories(${SDL2_IMAGE_DIRS})
 
-set(SRCS
-  main.c
-  game.c
-)
-
-set(HEADERS
-  constants.h
-  types.h
-  game.h
-)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+set(SRCS main.c game.c)
+set(HEADERS constants.h game.h)
 
 add_executable(GameOfLife ${SRCS} ${HEADERS})
 target_link_libraries(GameOfLife ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
