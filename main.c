@@ -1,19 +1,25 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 #define ASSET_DIRECTORY "../assets/"
+#define CELL_SIZE 20
+
+const int ROWS = SCREEN_HEIGHT / CELL_SIZE;
+const int COLUMNS = SCREEN_WIDTH / CELL_SIZE;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
-SDL_Texture *helloAgain = NULL;
+SDL_Texture *cellTexture = NULL;
+SDL_Texture *cellMutedTexture = NULL;
 
-int init() {
+bool init() {
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     printf("SDL could not initialize. SDL_Init Error: %s\n", SDL_GetError());
-    return 0;
+    return false;
   }
 
   window = SDL_CreateWindow("Conway's Game of Life", SDL_WINDOWPOS_UNDEFINED,
@@ -22,7 +28,7 @@ int init() {
 
   if (window == NULL) {
     printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
-    return 0;
+    return false;
   }
 
   renderer = SDL_CreateRenderer(
@@ -30,17 +36,17 @@ int init() {
 
   if (renderer == NULL) {
     printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
-    return 0;
+    return false;
   }
 
   SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
 
   if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
     printf("IMG_Init Error: %s\n", IMG_GetError());
-    return 0;
+    return false;
   }
 
-  return 1;
+  return true;
 }
 
 SDL_Texture *loadTexture(char *path) {
@@ -63,19 +69,26 @@ SDL_Texture *loadTexture(char *path) {
   return newTexture;
 }
 
-int loadMedia() {
-  helloAgain = loadTexture(ASSET_DIRECTORY "preview.png");
+bool loadMedia() {
+  cellTexture = loadTexture(ASSET_DIRECTORY "cell.png");
+  cellMutedTexture = loadTexture(ASSET_DIRECTORY "cell-muted.png");
 
-  if (helloAgain == NULL) {
-    return 0;
+  if (cellTexture == NULL) {
+    return false;
   }
 
-  return 1;
+  if (cellMutedTexture == NULL) {
+    return false;
+  }
+
+  return true;
 }
 
 void cleanup() {
-  SDL_DestroyTexture(helloAgain);
-  helloAgain = NULL;
+  SDL_DestroyTexture(cellTexture);
+  SDL_DestroyTexture(cellMutedTexture);
+  cellTexture = NULL;
+  cellMutedTexture = NULL;
 
   SDL_DestroyRenderer(renderer);
   renderer = NULL;
@@ -97,7 +110,15 @@ int main() {
   }
 
   SDL_Event event;
-  int quit = 0;
+  bool quit = false;
+  bool paused = true;
+  bool mouseDown = false;
+  int buttonMakeAlive = 0;
+  int grid[ROWS * COLUMNS];
+
+  for (int i = 0; i < ROWS * COLUMNS; i++) {
+    grid[i] = 0;
+  }
 
   while (!quit) {
     while (SDL_PollEvent(&event)) {
@@ -105,11 +126,30 @@ int main() {
       case SDL_QUIT:
         quit = 1;
         break;
+      case SDL_MOUSEMOTION: {
+        int x = event.button.x / CELL_SIZE;
+        int y = event.button.y / CELL_SIZE;
+        grid[y * COLUMNS + x] = buttonMakeAlive;
+        break;
+      }
+      case SDL_MOUSEBUTTONDOWN:
+        mouseDown = true;
+        buttonMakeAlive = event.button.button == 1;
+        break;
       }
     }
 
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, helloAgain, NULL, NULL);
+
+    for (int r = 0; r < ROWS; r++) {
+      for (int c = 0; c < COLUMNS; c++) {
+        SDL_Rect quad = {c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE};
+        SDL_RenderCopy(renderer,
+                       grid[r * COLUMNS + c] ? cellTexture : cellMutedTexture,
+                       NULL, &quad);
+      }
+    }
+
     SDL_RenderPresent(renderer);
   }
 
