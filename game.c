@@ -83,3 +83,9 @@ void renderGrid(int *grid, SDL_Renderer *renderer, SDL_Texture *aliveTexture,
     }
   }
 }
+
+void clearGrid(int *grid) {
+  for (int i = 0; i < ROWS * COLUMNS; i++) {
+    grid[i] = 0;
+  }
+}

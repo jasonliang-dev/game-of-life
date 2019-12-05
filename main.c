@@ -100,6 +100,7 @@ void updateCellByEvent(const SDL_Event *event, int *grid, int value) {
 }
 
 void handleEvent(SDL_Event *event, state_t *state) {
+  const Uint8 *currentKeyStates = SDL_GetKeyboardState(NULL);
   while (SDL_PollEvent(event)) {
     switch (event->type) {
     case SDL_QUIT:
@@ -117,6 +118,14 @@ void handleEvent(SDL_Event *event, state_t *state) {
       break;
     case SDL_MOUSEBUTTONUP:
       state->mouseDown = false;
+      break;
+    case SDL_KEYDOWN:
+      if (currentKeyStates[SDL_SCANCODE_SPACE]) {
+        state->paused = !state->paused;
+      }
+      else if (currentKeyStates[SDL_SCANCODE_ESCAPE]) {
+        clearGrid(state->grid);
+      }
       break;
     }
   }
@@ -141,9 +150,7 @@ int main() {
       .buttonMakeAlive = 0,
   };
 
-  for (int i = 0; i < ROWS * COLUMNS; i++) {
-    state.grid[i] = 0;
-  }
+  clearGrid(state.grid);
 
   SDL_Event event;
   Uint32 ticks;
@@ -158,7 +165,10 @@ int main() {
 
     ticks = now;
 
-    nextGeneration(state.grid);
+    if (!state.paused) {
+      nextGeneration(state.grid);
+    }
+
     SDL_RenderClear(renderer);
     renderGrid(state.grid, renderer, cellTexture, cellMutedTexture);
     SDL_RenderPresent(renderer);

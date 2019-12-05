@@ -5,7 +5,7 @@
 #define SCREEN_HEIGHT 480
 
 #define ASSET_DIRECTORY "../assets/"
-#define CELL_SIZE 20
+#define CELL_SIZE 16
 #define TICK_SPEED 42
 
 #define ROWS (SCREEN_HEIGHT / CELL_SIZE)
