@@ -1,0 +1,14 @@
+#ifndef CONSTANTS_H_
+#define CONSTANTS_H_
+
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+
+#define ASSET_DIRECTORY "../assets/"
+#define CELL_SIZE 20
+#define TICK_SPEED 33
+
+#define ROWS (SCREEN_HEIGHT / CELL_SIZE)
+#define COLUMNS (SCREEN_WIDTH / CELL_SIZE)
+
+#endif // CONSTANTS_H_

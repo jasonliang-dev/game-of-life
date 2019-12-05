@@ -1,45 +1,37 @@
+#include "constants.h"
+#include "state.h"
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
-#define ASSET_DIRECTORY "../assets/"
-#define CELL_SIZE 20
-
-const int ROWS = SCREEN_HEIGHT / CELL_SIZE;
-const int COLUMNS = SCREEN_WIDTH / CELL_SIZE;
-
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
 SDL_Texture *cellTexture = NULL;
 SDL_Texture *cellMutedTexture = NULL;
 
-bool init() {
+bool init(SDL_Window **window, SDL_Renderer **renderer) {
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     printf("SDL could not initialize. SDL_Init Error: %s\n", SDL_GetError());
     return false;
   }
 
-  window = SDL_CreateWindow("Conway's Game of Life", SDL_WINDOWPOS_UNDEFINED,
-                            SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
-                            SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+  *window = SDL_CreateWindow("Conway's Game of Life", SDL_WINDOWPOS_UNDEFINED,
+                             SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
+                             SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 
-  if (window == NULL) {
+  if (*window == NULL) {
     printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
     return false;
   }
 
-  renderer = SDL_CreateRenderer(
-      window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  *renderer = SDL_CreateRenderer(
+      *window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-  if (renderer == NULL) {
+  if (*renderer == NULL) {
     printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
     return false;
   }
 
-  SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
+  SDL_SetRenderDrawColor(*renderer, 0x00, 0x00, 0x00, 0x00);
 
   if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
     printf("IMG_Init Error: %s\n", IMG_GetError());
@@ -49,7 +41,7 @@ bool init() {
   return true;
 }
 
-SDL_Texture *loadTexture(char *path) {
+SDL_Texture *loadTexture(char *path, SDL_Renderer *renderer) {
   SDL_Surface *loadedSurface = IMG_Load(path);
 
   if (loadedSurface == NULL) {
@@ -69,9 +61,9 @@ SDL_Texture *loadTexture(char *path) {
   return newTexture;
 }
 
-bool loadMedia() {
-  cellTexture = loadTexture(ASSET_DIRECTORY "cell.png");
-  cellMutedTexture = loadTexture(ASSET_DIRECTORY "cell-muted.png");
+bool loadMedia(SDL_Renderer *renderer) {
+  cellTexture = loadTexture(ASSET_DIRECTORY "cell.png", renderer);
+  cellMutedTexture = loadTexture(ASSET_DIRECTORY "cell-muted.png", renderer);
 
   if (cellTexture == NULL) {
     return false;
@@ -84,7 +76,7 @@ bool loadMedia() {
   return true;
 }
 
-void cleanup() {
+void cleanup(SDL_Window *window, SDL_Renderer *renderer) {
   SDL_DestroyTexture(cellTexture);
   SDL_DestroyTexture(cellMutedTexture);
   cellTexture = NULL;
@@ -100,44 +92,70 @@ void cleanup() {
   SDL_Quit();
 }
 
+void updateCellByEvent(const SDL_Event *event, int *grid, int value) {
+  int x = event->button.x / CELL_SIZE;
+  int y = event->button.y / CELL_SIZE;
+  grid[y * COLUMNS + x] = value;
+}
+
+void handleEvent(SDL_Event *event, state_t *state) {
+  while (SDL_PollEvent(event)) {
+    switch (event->type) {
+    case SDL_QUIT:
+      state->quit = 1;
+      break;
+    case SDL_MOUSEMOTION:
+      if (state->mouseDown) {
+        updateCellByEvent(event, state->grid, state->buttonMakeAlive);
+      }
+      break;
+    case SDL_MOUSEBUTTONDOWN:
+      state->mouseDown = true;
+      state->buttonMakeAlive = event->button.button == 1;
+      updateCellByEvent(event, state->grid, state->buttonMakeAlive);
+      break;
+    case SDL_MOUSEBUTTONUP:
+      state->mouseDown = false;
+      break;
+    }
+  }
+}
+
 int main() {
-  if (!init()) {
+  SDL_Window *window = NULL;
+  SDL_Renderer *renderer = NULL;
+
+  if (!init(&window, &renderer)) {
     return EXIT_FAILURE;
   }
 
-  if (!loadMedia()) {
+  if (!loadMedia(renderer)) {
     return EXIT_FAILURE;
+  }
+
+  state_t state = {
+      .quit = false,
+      .paused = true,
+      .mouseDown = false,
+      .buttonMakeAlive = 0,
+  };
+
+  for (int i = 0; i < ROWS * COLUMNS; i++) {
+    state.grid[i] = 0;
   }
 
   SDL_Event event;
-  bool quit = false;
-  bool paused = true;
-  bool mouseDown = false;
-  int buttonMakeAlive = 0;
-  int grid[ROWS * COLUMNS];
+  Uint32 ticks;
+  Uint32 now;
+  while (!state.quit) {
+    handleEvent(&event, &state);
+    now = SDL_GetTicks();
 
-  for (int i = 0; i < ROWS * COLUMNS; i++) {
-    grid[i] = 0;
-  }
-
-  while (!quit) {
-    while (SDL_PollEvent(&event)) {
-      switch (event.type) {
-      case SDL_QUIT:
-        quit = 1;
-        break;
-      case SDL_MOUSEMOTION: {
-        int x = event.button.x / CELL_SIZE;
-        int y = event.button.y / CELL_SIZE;
-        grid[y * COLUMNS + x] = buttonMakeAlive;
-        break;
-      }
-      case SDL_MOUSEBUTTONDOWN:
-        mouseDown = true;
-        buttonMakeAlive = event.button.button == 1;
-        break;
-      }
+    if (now - ticks < TICK_SPEED) {
+      continue;
     }
+
+    ticks = now;
 
     SDL_RenderClear(renderer);
 
@@ -145,7 +163,8 @@ int main() {
       for (int c = 0; c < COLUMNS; c++) {
         SDL_Rect quad = {c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE};
         SDL_RenderCopy(renderer,
-                       grid[r * COLUMNS + c] ? cellTexture : cellMutedTexture,
+                       state.grid[r * COLUMNS + c] ? cellTexture
+                                                   : cellMutedTexture,
                        NULL, &quad);
       }
     }
@@ -153,7 +172,7 @@ int main() {
     SDL_RenderPresent(renderer);
   }
 
-  cleanup();
+  cleanup(window, renderer);
 
   return 0;
 }
