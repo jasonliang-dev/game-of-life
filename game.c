@@ -42,6 +42,7 @@ void nextGeneration(int *grid) {
       neighbours = countNeighbours(grid, c, r);
       self = grid[r * COLUMNS + c];
 
+      // stolen from: https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
       // Any live cell with fewer than two live neighbours dies, as if by
       // underpopulation.
       if (self && neighbours < 2) {
