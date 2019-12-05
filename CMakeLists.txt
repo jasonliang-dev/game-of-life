@@ -9,5 +9,16 @@ find_package(SDL2_image REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 include_directories(${SDL2_IMAGE_DIRS})
 
-add_executable(GameOfLife WIN32 main.c)
+set(SRCS
+  main.c
+  game.c
+)
+
+set(HEADERS
+  constants.h
+  types.h
+  game.h
+)
+
+add_executable(GameOfLife ${SRCS} ${HEADERS})
 target_link_libraries(GameOfLife ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})

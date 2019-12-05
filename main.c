@@ -1,5 +1,6 @@
 #include "constants.h"
-#include "state.h"
+#include "game.h"
+#include "types.h"
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdbool.h>
@@ -157,18 +158,9 @@ int main() {
 
     ticks = now;
 
+    nextGeneration(state.grid);
     SDL_RenderClear(renderer);
-
-    for (int r = 0; r < ROWS; r++) {
-      for (int c = 0; c < COLUMNS; c++) {
-        SDL_Rect quad = {c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE};
-        SDL_RenderCopy(renderer,
-                       state.grid[r * COLUMNS + c] ? cellTexture
-                                                   : cellMutedTexture,
-                       NULL, &quad);
-      }
-    }
-
+    renderGrid(state.grid, renderer, cellTexture, cellMutedTexture);
     SDL_RenderPresent(renderer);
   }
 
