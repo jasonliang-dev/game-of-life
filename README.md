@@ -13,8 +13,8 @@
 
 # Downloads
 
-- [Windows](https://github.com/jasonliang512/game-of-life/releases/download/v1.0/game-of-life-windows-x64.zip)
-- [Linux](https://github.com/jasonliang512/game-of-life/releases/download/v1.0/game-of-life-linux.zip)
+- [Windows](https://github.com/jasonliang-dev/game-of-life/releases/download/v1.0/game-of-life-windows-x64.zip)
+- [Linux](https://github.com/jasonliang-dev/game-of-life/releases/download/v1.0/game-of-life-linux.zip)
 
 # Building
 
